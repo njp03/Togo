@@ -1,0 +1,49 @@
+import requests
+from bs4 import BeautifulSoup
+
+# URL of the login page
+login_url = 'https://example.com/login'
+
+# URL you want to scrape after logging in
+target_url = 'https://example.com/target-page'
+
+# User credentials
+payload = {
+    'username': 'your_username',
+    'password': 'your_password'
+}
+
+# Path to the certificate file
+cert_path = 'path/to/your/certificate.pem'
+# If you have separate certificate and key files, use a tuple:
+# cert_path = ('path/to/your/certificate.crt', 'path/to/your/private.key')
+
+# Start a session
+session = requests.Session()
+
+# Get the login page to get the necessary cookies and hidden form fields
+response = session.get(login_url, cert=cert_path)
+soup = BeautifulSoup(response.text, 'html.parser')
+
+# If there are any hidden fields, add them to the payload
+hidden_fields = soup.find_all("input", type="hidden")
+for field in hidden_fields:
+    payload[field['name']] = field['value']
+
+# Post the login form
+response = session.post(login_url, data=payload, cert=cert_path)
+
+# Check if login was successful
+if response.url == login_url:
+    print("Login failed.")
+else:
+    print("Login successful.")
+
+    # Now you can access the target page
+    response = session.get(target_url, cert=cert_path)
+    if response.status_code == 200:
+        # Process the page content
+        soup = BeautifulSoup(response.text, 'html.parser')
+        print(soup.prettify())
+    else:
+        print(f"Failed to retrieve the target page: {response.status_code}")
